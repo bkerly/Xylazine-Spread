@@ -73,7 +73,7 @@ US_data %>%
 # Xylazine, Fentanyl, and Heroin by Region --------------------------------
 
 region_data <- analysis_data %>%
-  group_by(    date,base_drug,region_name
+  group_by(date,base_drug,region_name
 )%>%
   summarize(drug_reports = sum(drug_reports,na.rm = TRUE)) %>%
   ungroup() %>%
@@ -83,3 +83,41 @@ region_data %>%
   ggplot(aes(x=date,y=drug_reports,color = base_drug)) +
   geom_line() +
   facet_wrap(~region_name)
+
+
+# Big 3 Detections --------------------------------------------------------
+
+pct_detections <- analysis_data %>%
+  pivot_wider(names_from = "base_drug",values_from = "drug_reports") %>%
+  group_by(state_abb,region_name,division_name,date) %>%
+  mutate(across(Heroin:Xylazine, 
+                ~ .x / sum(Heroin,Oxycodone,Fentanyl,Xylazine,na.rm=TRUE),
+                 .names = "pct_{.col}")) %>%
+  ungroup()
+
+# four states
+pct_detections %>%
+  filter(state_abb %in% c("NY","PA","OH","CA")) %>%
+  select(state_abb,date,starts_with("pct_")) %>%
+  pivot_longer(cols = starts_with("pct_"),
+               names_to = "Drug",
+               values_to = "Percent"
+  ) %>%
+  ggplot(aes(x=date,y=Percent,color = Drug)) +
+  geom_line() +
+  ggthemes::theme_igray() +
+  ylab("Relative Percent")+
+  scale_y_continuous(labels = scales::percent)+
+  facet_wrap(~state_abb,nrow=4)
+
+pct_detections %>% 
+  filter(state_abb %in% c("NY","PA","OH","CA")) %>%
+  group_by(state_abb) %>%
+  arrange(date) %>%
+  mutate(xylaxine_increase = pct_Xylazine / lag(pct_Xylazine)) %>%
+  ungroup() %>%
+  ggplot(aes(x=date,y=pct_Xylazine,color = state_abb)) +
+  geom_line() +
+  ylim(0,0.05)+
+  ylab("Relative Percent Xylazine")+
+  scale_y_continuous(labels = scales::percent)
