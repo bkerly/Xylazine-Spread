@@ -103,12 +103,15 @@ pct_detections %>%
                names_to = "Drug",
                values_to = "Percent"
   ) %>%
+  filter(date >= ymd("2012-1-1")) %>%
+  filter(Drug != "pct_Oxycodone") %>%
   ggplot(aes(x=date,y=Percent,color = Drug)) +
   geom_line() +
   ggthemes::theme_igray() +
   ylab("Relative Percent")+
   scale_y_continuous(labels = scales::percent)+
   facet_wrap(~state_abb,nrow=4)
+
 
 pct_detections %>% 
   filter(state_abb %in% c("NY","PA","OH","CA")) %>%
